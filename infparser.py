@@ -15,6 +15,7 @@
 # for more details.
 # ======================================================================
 
+import string
 from codecs import utf_16_le_decode, BOM_LE, BOM_BE
 from sys import argv, exit as sys_exit
 from os.path import isfile
@@ -328,7 +329,7 @@ if __name__ == '__main__':
         vid = entry[0].split('VEN_').pop().lower()
         pid = entry[1].split('DEV_').pop().lower()
         key = (vid, pid)
-        line = '%4s %4s %s %s\n' % (vid, pid, nic[1]['drv'], nic[1]['svc'])
+        line = '%4s %4s %s %s\n' % (vid, pid, string.lower(nic[1]['drv']), nic[1]['svc'])
         drvhash[key] = line
 
     drvlist = drvhash.values()
