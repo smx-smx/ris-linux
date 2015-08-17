@@ -21,7 +21,7 @@ from os.path import isfile
 from glob import glob
 from cPickle import dump
 from traceback import format_exc
-
+from pprint import pprint
 __version__ = '1.0'
 
 ### Compatibility with python 2.1
@@ -296,8 +296,8 @@ if __name__ == '__main__':
     if isfile(argv[1]):
         filelist = [ argv[1] ]
     else:
-        filelist = glob(argv[1] + '/*.inf')
-
+        filelist = glob(argv[1] + '/*.[iI][nN][fF]')
+        pprint(filelist)
     devlist = {}
     for inffile in filelist:
         if inffile.split('/').pop() not in exclude:
