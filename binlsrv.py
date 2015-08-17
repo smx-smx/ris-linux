@@ -59,7 +59,8 @@ OSC_NOTFOUND="""<OSCML>
 
 #############
 # Make sure there is the trailing / here
-BASEPATH = '/mnt/disk/ris/OSChooser/English/'
+# BASEPATH = '/mnt/disk/ris/OSChooser/English/'
+BASEPATH = 'J:/dhcpsrv2.3/minint/I386/'
 WELCOME  = 'welcome.osc'
 DUMPING  = False
 
@@ -660,7 +661,7 @@ def decode_ntlm(p, data):
 decode_aut = decode_ntlm
 
 ## Only PCI Cards are supported for now
-def send_ncr(s, addr, vid, pid, subsys):
+def send_ncr(s, addr, vid, pid, subsys, rev):
     global devlist
     #reply = open('vmware.hex', 'rb').read()
     #decode_ncr('[VmWare]', reply[8:])
@@ -673,18 +674,23 @@ def send_ncr(s, addr, vid, pid, subsys):
 
     device = 'PCI\\VEN_%04X&DEV_%04X' % (vid, pid)
     device_sub = device + '&SUBSYS_%08X' % subsys
-
+    device_rev = device_sub + '&REV_%02X' % rev
     dev = None
     try:
-        print 'Checking', device_sub
-        dev = devlist[device_sub]
-        dev_uni = device_sub
+        print 'Checking', device_rev
+        dev = devlist[device_rev]
+        dev_uni = device_rev
     except:
         try:
-            print 'Checking', device
-            dev = devlist[device]
-            dev_uni = device
-        except: pass
+            print 'Checking', device_sub
+            dev = devlist[device_sub]
+            dev_uni = device_sub
+        except:
+            try:
+                print 'Checking', device
+                dev = devlist[device]
+                dev_uni = device
+            except: pass
 
     if dev is None:
         reply = NCR + pack('<I', 0x4) + pack('<I', 0xc000000dL)
@@ -800,7 +806,7 @@ def decode_ncr(p, data):
         parms = parms + 1
     print p, 'Total Params:', parms
 
-def send_ncq(s, vid, pid, subsys, spath):
+def send_ncq(s, vid, pid, subsys, rev, spath):
     #vid    = 0x1022
     #pid    = 0x2000
     #rev_u1 = 0x2
@@ -869,10 +875,12 @@ def decode_ncq(p, data):
     print p, 'Pid: 0x%x' % pid
     data = data[2:]
 
+    rev = unpack('<B', data[3])
+
     print p, 'rev_u1 = 0x%x' % unpack('<B', data[0])
     print p, 'rev_u2 = 0x%x' % unpack('<B', data[1])
     print p, 'rev_u3 = 0x%x' % unpack('<B', data[2])
-    print p, 'rev    = 0x%x' % unpack('<B', data[3])
+    print p, 'rev    = 0x%x' % rev
     data = data[4:]
 
     print p, 'rev2   = 0x%x' % unpack('<I', data[:4])
@@ -887,7 +895,7 @@ def decode_ncq(p, data):
 
     data = data[:l]
     print p, 'Source path:', data.replace('\x00','')
-    return vid, pid, subsys
+    return vid, pid, subsys, rev
 
 
 def decode_req(p, data):
@@ -1121,8 +1129,8 @@ if __name__ == '__main__':
         elif t == NCQ:
             print 'NCQ Driver request'
             if DUMPING: open('/tmp/ncq.hex','wb').write(data)
-            vid, pid, subsys = decode_ncq('[R]', data)
-            send_ncr(s, addr, vid, pid, subsys)
+            vid, pid, subsys, rev = decode_ncq('[R]', data)
+            send_ncr(s, addr, vid, pid, subsys, rev)
         elif t == REQ:
             print 'REQ request, sending Session Expired (RSP not implemented)'
             decode_req('[C]', data)
