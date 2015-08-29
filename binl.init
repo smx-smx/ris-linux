@@ -1,0 +1,98 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides: binl
+# Default-Start:
+# Default-Stop:
+# Should-Start:
+# Required-Start: $network
+# Required-Stop:
+# Short-Description: Start and stop the BINL server
+# Description: binl provides a Boot Information Negotiation Layer (BINL) server
+### END INIT INFO
+#
+# The fields below are left around for legacy tools (will remove later).
+#
+# chkconfig: - 65 35
+# description: binl provides a Boot Information Negotiation Layer (BINL) server
+# processname: binl
+# config: /etc/binl/devlist.cache
+# pidfile: /var/run/binl.pid
+
+. /etc/init.d/functions
+
+RETVAL=0
+
+prog=binl
+binl=/usr/sbin/binl
+binldb=/etc/binl/devlist.cache
+lockfile=/var/lock/subsys/binl
+pidfile=/var/run/binl.pid
+
+start() {
+    [ -x $binl ] || return 5
+    [ -f $binldb ] || return 6
+
+    pidofproc $prog >/dev/null 2>&1
+    RETVAL=$?
+    [ $RETVAL -eq 0 ] && return $RETVAL
+
+    echo -n $"Starting $prog: "
+    daemon $binl --daemon --logfile=/var/log/binl.log --pid=$pidfile $binldb
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && touch $lockfile
+    return $RETVAL
+}
+
+stop() {
+    pidofproc $prog >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        RETVAL=7
+        return $RETVAL
+    fi
+
+    echo -n $"Shutting down $prog: "
+    killproc $prog
+    RETVAL=$?
+
+    echo
+    [ $RETVAL = 0 ] && rm -f $lockfile
+    return $RETVAL
+}
+
+if [ $# -gt 1 ]; then
+    RETVAL=2
+    exit $RETVAL
+fi
+
+case "$1" in
+    start)
+        start
+        RETVAL=$?
+        ;;
+    stop)
+        stop
+        RETVAL=$?
+        ;;
+    restart|force-reload)
+        stop ; start
+        RETVAL=$?
+        ;;
+    condrestart)
+        if [ -f $lockfile ]; then
+            stop ; start
+            RETVAL=$?
+        fi
+        ;;
+    status)
+        status $binl
+        RETVAL=$?
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+        RETVAL=3
+        ;;
+esac
+
+exit $RETVAL
