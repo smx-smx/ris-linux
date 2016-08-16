@@ -1,0 +1,25 @@
+To create the database files, collect all of the drivers you want to use
+during installation in to a single directory.  For example, to collect all
+of the drivers from a Windows 2000 installation tree, you would do something
+like this:
+
+    mkdir -p /tmp/drivers
+    cabextract /path/to/win2k/i386/*.in_
+    cabextract /path/to/win2k/i386/driver.cab
+
+You may add whatever Windows drivers you need during installation to this
+directory so that the BINL service can answer queries for device types not
+directly supported by Windows.  This is useful for adding vendor-supplied
+network device drivers.
+
+Then run infparser to generate the nics.txt and devlist.cache databases:
+
+    cd /etc/binl
+    infparser /tmp/drivers
+    rm -rf /tmp/drivers
+
+The temporary driver directory really just needs to contain the *.INF
+files for the various drivers you want to use during installation.  The
+actual driver files will end up being server to the client by TFTP.  The
+BINL service only answers device queries and responds with a filename if
+there is a match.

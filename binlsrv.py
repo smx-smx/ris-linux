@@ -21,10 +21,24 @@ from struct import unpack, pack
 from sys import argv, exit as sys_exit
 from signal import signal, SIGINT, SIGTERM
 from time import sleep, time
-from md5 import md5
 from cPickle import load
 from os import chdir, getpid, unlink
 from getopt import getopt, error as getopt_error
+
+try:
+    import hashlib
+except:
+    import md5
+    import sha
+
+    class hashlib:
+        @staticmethod
+        def new(algo):
+            if algo == 'md5':
+                return md5.new()
+            if algo == 'sha1':
+                return sha.new()
+            raise ValueError, "Bad checksum value"
 
 ## NTML Auth Code from: NTLM Authorization Proxy Server
 ## Copyright 2001 Dmitry A. Rozmanov <dima@xenon.spb.ru>
@@ -368,7 +382,7 @@ def nt_response(password, challenge):
     return do_des(pw[0:7], challenge) + do_des(pw[7:14], challenge) + do_des(pw[14:21], challenge)
 
 def gen_challenge(addr):
-    c = md5()
+    c = hashlib.new('md5')
     c.update(addr[0])
     c.update(str(addr[1]))
     return c.digest()[:8]

@@ -199,13 +199,13 @@ static inline void eol(FILE *fd)
         if(fread(&c, 1, sizeof(c), fd) != sizeof(c)) break;
 }
 
-int find_drv(uint16_t cvid, uint16_t cpid, DRIVER *drv)
+int find_drv(uint16_t cvid, uint16_t cpid, DRIVER *drv, char *nicfile)
 {
     uint32_t vid, pid;
     char buffer[1024];
     int found = 0;
 
-    FILE *fd = fopen(NICFILE, "r");
+    FILE *fd = fopen(nicfile, "r");
     if (!fd)
     {
          printf("Problems opening nic file\n");
@@ -278,9 +278,25 @@ int main(int argc, char *argv[])
     struct sockaddr_in local, from;
     char buffer[1024];
     char packet[1024];
+    char *nicfile = NULL;
     uint32_t type = 0, value = 0, res = NCR_OK;
     uint16_t vid = 0, pid = 0;
     uint32_t fromlen = 0, offset = 0, retval = 0;
+
+    if (argc == 2)
+    {
+        nicfile = argv[1];
+    }
+    else
+    {
+        nicfile = NICFILE;
+    }
+
+    if (access(nicfile, F_OK|R_OK))
+    {
+        fprintf(stderr, "Error accessing %s: %m\n", nicfile);
+        return -1;
+    }
 
 #ifdef _WIN32
     WSADATA wsaData;
@@ -356,7 +372,7 @@ int main(int argc, char *argv[])
         memcpy(packet, &type, sizeof(type));
         offset += sizeof(type);
 
-        if (find_drv(vid, pid, &drv))
+        if (find_drv(vid, pid, &drv, nicfile))
         {
             size_t ulen = 0;
             res = SWAB32(NCR_OK);
