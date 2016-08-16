@@ -579,7 +579,9 @@ def send_bootp(s, addr, info):
     hostname = myhostname + (NULL * (64 - len(myhostname)))
     p = p + hostname                   # hostname
 
-    bootfile = 'pxeboot.com'
+    bootfile = 'win7pe\\tftproot\\system1\\pxeboot.com'
+    bcdpath = 'win7pe\\tftproot\\BCD'
+
     bf = bootfile + (NULL * (128 - len(bootfile)))
     p = p + bf                         # Boot File
 
@@ -589,7 +591,7 @@ def send_bootp(s, addr, info):
     p = p + chr(54) + chr(4) + ip2byte(hostip) # Server ID
     p = p + chr(97) + chr(len(info['guid'])) + info['guid']
     p = p + chr(60) + chr(9) + 'PXEClient'
-    p = p + chr(252) + chr(len('boot\\bcd')) + 'boot\\bcd'
+    p = p + chr(252) + chr(len(bcdpath)) + bcdpath
     p = p + chr(0xff)
     decode_bootp('[S]', p)
     #open('out', 'wb').write(p)
