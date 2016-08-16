@@ -44,6 +44,7 @@ __usage__ = """Usage %s: [-h] [-d] [-l logfile] [-a address] [-p port]
 -a, --address= : ip address to bind to [all interfaces]
 -p, --port=    : port to bind to [4011]
     --pid=     : pid file to use instead of the default
+-w, --wds=     : start WDS server only (without BINL/RIS)
 devlist.cache  : device list cache file [devlist.cache in current dir]
 """
 
@@ -276,6 +277,11 @@ def ip2byte(ip):
     except:
         return '\x00' * 4
 
+def get_ip_address():
+    s = socket(AF_INET, SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
+
 def get_packet(s):
     global pidfile
     try:
@@ -448,7 +454,7 @@ def bootp_dump(p, opt, value):
 
 def decode_bootp(p, data):
     print p, '-' * 78
-    print p, 'WDS Packet: Vista network client'
+    print p, 'WDS Packet: NT6 network client'
 
     info = {}
 
@@ -541,7 +547,8 @@ def decode_bootp(p, data):
     return info
 
 def send_bootp(s, addr, info):
-    hostip = gethostbyname(myhostname)
+    #hostip = gethostbyname(myhostname)
+    hostip = get_ip_address()
     p = chr(0x2)                       # Boot Reply
     p = p + chr(0x1)                   # hw type: ethernet
     p = p + chr(0x6)                   # hw addr len
@@ -1023,6 +1030,7 @@ if __name__ == '__main__':
     ## Defaults
     global pidfile, s
     daemon  = False
+    wdsonly = False
     logfile = '/var/log/binlsrv.log'
     address = ''
     port    = 4011
@@ -1030,8 +1038,8 @@ if __name__ == '__main__':
     pidfile = '/var/run/binlsrv.pid'
 
     ## Parse command line arguments
-    shortopts = 'hdl:a:p:'
-    longopts = [ 'help', 'daemon', 'logfile=', 'address=', 'port=' ]
+    shortopts = 'hdwl:a:p:'
+    longopts = [ 'help', 'daemon', 'wds', 'logfile=', 'address=', 'port=' ]
 
     try:
         opts, args = getopt(argv[1:], shortopts, longopts)
@@ -1063,6 +1071,9 @@ if __name__ == '__main__':
                 port = int(arg)
             except:
                 port = -1
+        if opt in ('w', 'wds'):
+            wdsonly = True
+            continue
         if opt in ('pid'):
             pidfile = arg
 
@@ -1073,14 +1084,15 @@ if __name__ == '__main__':
     if len(args):
         devfile = args[0]
 
-    try:
-        devlist = load(open(devfile, 'rb'))
-    except:
-        print 'Could not load %s as cache, build it with infparser.py' % devfile
-        sys_exit(-1)
+    if not wdsonly:
+        try:
+            devlist = load(open(devfile, 'rb'))
+        except:
+            print 'Could not load %s as cache, build it with infparser.py' % devfile
+            sys_exit(-1)
 
-    if daemon: daemonize(logfile)
-    print 'Succesfully loaded %d devices' % len(devlist)
+        if daemon: daemonize(logfile)
+        print 'Succesfully loaded %d devices' % len(devlist)
 
     s = socket(AF_INET, SOCK_DGRAM)
     s.bind((address, port))
