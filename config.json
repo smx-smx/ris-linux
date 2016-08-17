@@ -1,4 +1,7 @@
 {
-  "bootfile":"/tftproot/Win_RIS/pxeboot.com",
-  "bcdpath":"/tftproot/Win_RIS/BCD"
+  "bootfile": "/tftproot/Win_RIS/pxeboot.com",
+  "bcdpath": "/tftproot/Win_RIS/BCD",
+  "logfile": "/var/log/binlsrv.log",
+  "pidfile": "/var/run/binlsrv.pid",
+  "port": 4011
 }

@@ -565,6 +565,7 @@ def decode_bootp(p, data):
         bootp_dump(p, opt, value)
     return info
 
+
 def send_bootp(s, addr, info):
     #hostip = gethostbyname(myhostname)
     hostip = get_ip_address()
@@ -584,8 +585,8 @@ def send_bootp(s, addr, info):
     hostname = myhostname + (NULL * (64 - len(myhostname)))
     p = p + hostname                   # hostname
 
-    bootfile = config['bootfile']
-    bcdpath = config['bcdpath']
+    bootfile = config.get('bootfile', 'pxeboot.com') # fallback as second arg
+    bcdpath = config.get('bcdpath', 'Boot\\BCD')
 
     bf = bootfile + (NULL * (128 - len(bootfile)))
     p = p + bf                         # Boot File
@@ -1052,12 +1053,12 @@ if __name__ == '__main__':
     global pidfile, s
     daemon  = False
     wdsonly = False
-    logfile = '/var/log/binlsrv.log'
+    logfile = config.get('logfile', '/var/log/binlsrv.log')
     address = ''
-    port    = 4011
+    port    = config.get('port', 4011)
     configfile = 'config.json'
     devfile = 'devlist.cache'
-    pidfile = '/var/run/binlsrv.pid'
+    pidfile = config.get('pidfile', '/var/run/binlsrv.pid')
 
     ## Parse command line arguments
     shortopts = 'hdwl:a:p:c:'
@@ -1123,8 +1124,6 @@ if __name__ == '__main__':
         with io.open(configfile, 'tr') as f:
             json_config = json.load(f)
 
-        if not json_config.get('bootfile') or not json_config.get('bcdpath'):
-            raise Exception('Values \'bootfile\' and/or \'bcdpath\' are missing')
         config.update(json_config)
 
     except Exception as e:
