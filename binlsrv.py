@@ -1094,7 +1094,7 @@ if __name__ == '__main__':
             except:
                 port = -1
         if opt in ('c', 'config'):
-            logfile = arg
+            configfile = arg
             continue
         if opt in ('w', 'wds'):
             wdsonly = True
