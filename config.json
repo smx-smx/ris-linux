@@ -1,0 +1,4 @@
+{
+  "bootfile":"/tftproot/Win_RIS/pxeboot.com",
+  "bcdpath":"/tftproot/Win_RIS/BCD"
+}

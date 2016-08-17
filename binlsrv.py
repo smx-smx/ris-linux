@@ -15,6 +15,8 @@
 # for more details.
 # ======================================================================
 
+import io
+import json
 from socket import socket, AF_INET, SOCK_DGRAM, getfqdn, gethostbyname
 from codecs import utf_16_le_decode, utf_16_le_encode, ascii_encode
 from struct import unpack, pack
@@ -57,6 +59,7 @@ __usage__ = """Usage %s: [-h] [-d] [-l logfile] [-a address] [-p port]
 -l, --logfile= : logfile when used in daemon mode [/var/log/binlsrv.log]
 -a, --address= : ip address to bind to [all interfaces]
 -p, --port=    : port to bind to [4011]
+-c, --config=  : config to read for bootp/bcd filepath
     --pid=     : pid file to use instead of the default
 -w, --wds=     : start WDS server only (without BINL/RIS)
 devlist.cache  : device list cache file [devlist.cache in current dir]
@@ -209,6 +212,8 @@ bootp = {
     250: ['h', 'Private'],  # 01020006ff
     252: ['s', 'Boot Configuration Data File']
     }
+
+config = {}
 
 devlist = None
 
@@ -579,8 +584,8 @@ def send_bootp(s, addr, info):
     hostname = myhostname + (NULL * (64 - len(myhostname)))
     p = p + hostname                   # hostname
 
-    bootfile = 'win7pe\\tftproot\\system1\\pxeboot.com'
-    bcdpath = 'win7pe\\tftproot\\BCD'
+    bootfile = config['bootfile']
+    bcdpath = config['bcdpath']
 
     bf = bootfile + (NULL * (128 - len(bootfile)))
     p = p + bf                         # Boot File
@@ -1050,12 +1055,13 @@ if __name__ == '__main__':
     logfile = '/var/log/binlsrv.log'
     address = ''
     port    = 4011
+    configfile = 'config.json'
     devfile = 'devlist.cache'
     pidfile = '/var/run/binlsrv.pid'
 
     ## Parse command line arguments
-    shortopts = 'hdwl:a:p:'
-    longopts = [ 'help', 'daemon', 'wds', 'logfile=', 'address=', 'port=' ]
+    shortopts = 'hdwl:a:p:c:'
+    longopts = [ 'help', 'daemon', 'wds', 'logfile=', 'address=', 'port=', 'configfile=' ]
 
     try:
         opts, args = getopt(argv[1:], shortopts, longopts)
@@ -1087,6 +1093,9 @@ if __name__ == '__main__':
                 port = int(arg)
             except:
                 port = -1
+        if opt in ('c', 'config'):
+            logfile = arg
+            continue
         if opt in ('w', 'wds'):
             wdsonly = True
             continue
@@ -1109,6 +1118,19 @@ if __name__ == '__main__':
 
         if daemon: daemonize(logfile)
         print 'Succesfully loaded %d devices' % len(devlist)
+
+    try:
+        with io.open(configfile, 'tr') as f:
+            json_config = json.load(f)
+
+        if not json_config.get('bootfile') or not json_config.get('bcdpath'):
+            raise Exception('Values \'bootfile\' and/or \'bcdpath\' are missing')
+        config.update(json_config)
+
+    except Exception as e:
+        print('Could not load configuration %s, Error: %s. Aborting!' % (configfile, e))
+        sys_exit(-2)
+
 
     s = socket(AF_INET, SOCK_DGRAM)
     s.bind((address, port))
